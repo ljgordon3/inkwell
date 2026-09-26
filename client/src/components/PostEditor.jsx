@@ -45,8 +45,7 @@ onSubmit={(e) => { e.preventDefault(); handlePublish();
 }}
 >
 <div>
-<label htmlFor="post-title" className="block text-sm
-font-medium text-gray-700">
+<label htmlFor="post-title" className="block text-sm font-medium text-gray-700">
 Title
 </label>
 <input
@@ -78,8 +77,7 @@ className="mt-1 block w-full rounded border-gray-300 shadow-sm"
 <button
 type="submit"
 disabled={status === STATES.PUBLISHING}
-className="rounded bg-indigo-600 px-4 py-2 text-white
-disabled:opacity-50"
+className="w-full md:w-auto min-h-[44px] rounded bg-indigo-600 px-4 py-2 text-white disabled:opacity-50"
 >
 {status === STATES.PUBLISHING ? "Publishing…" : "Publish"}
 </button>
