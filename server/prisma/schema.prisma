@@ -12,25 +12,43 @@ datasource db {
 }
 
 model User {
-id String @id @default(uuid())
-email String @unique
-displayName String
-passwordHash String
-isVerified Boolean @default(false)
-createdAt DateTime @default(now())
-posts Post[]
+  id           String   @id @default(uuid())
+  email        String   @unique
+  displayName  String
+  passwordHash String
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  posts        Post[]
 }
+
 enum PostStatus {
-DRAFT
-PUBLISHED
+  DRAFT
+  PUBLISHED
 }
+
 model Post {
-id String @id @default(uuid())
-authorId String
-author User @relation(fields: [authorId], references: [id])
-title String
-body String
-status PostStatus @default(DRAFT)
-publishedAt DateTime?
-createdAt DateTime @default(now())
+  id          String     @id @default(uuid())
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id])
+  title       String
+  body        String
+  status      PostStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  tags        PostTag[]
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  posts PostTag[]
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  post   Post @relation(fields: [postId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
 }

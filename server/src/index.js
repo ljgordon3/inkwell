@@ -1,14 +1,15 @@
 // server/src/index.js
 //
-// Entry point for the Inkwell API server.
-// Lecture 1: intentionally minimal. This file's only job right now
-// is to prove the server process boots and can answer one request.
-// Middleware, routing modules, and error handling arrive in Lecture 4+.
+// Entry point. As of Lecture 5, this file's only job is to assemble
+// middleware and mount routers — it contains no business logic itself,
+// consistent with ADR-001's layered architecture.
+
 import "dotenv/config";
 import express from "express";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import postRoutes from "./routes/post.routes.js";
+import "./events/listeners/log-published-posts.listener.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
