@@ -8,3 +8,13 @@ import { EventBus } from "../event-bus.js";
 EventBus.on("post.published", (payload) => {
 console.log(`[event] post.published:`, payload);
 });
+
+let totalPostsPublished = 0;
+
+EventBus.on("post.published", () => {
+  totalPostsPublished += 1;
+});
+
+export function getTotalPostsPublished() {
+  return totalPostsPublished;
+}

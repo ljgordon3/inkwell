@@ -5,9 +5,10 @@ import { assertNonEmpty } from "../utils/validation.js";
 import { SubstringSearchStrategy } from "./search/substring-search.strategy.js";
 const searchStrategy = SubstringSearchStrategy; // swap this line to change search behavior system-wide
 export const PostService = {
-async publish({ authorId, title, body, tagNames = [] }) {
+async publish({ authorId, title, body, tagNames: rawTagNames = [] }) {
 assertNonEmpty(title, "title", "MISSING_TITLE");
 assertNonEmpty(body, "body", "MISSING_BODY");
+const tagNames = [...new Set(rawTagNames.map((t) => String(t).trim()).filter(Boolean))];
 
 const post = await PostRepository.createWithTags({
 authorId, title, body, tagNames,
