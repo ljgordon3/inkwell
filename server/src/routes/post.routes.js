@@ -1,60 +1,49 @@
-// server/src/routes/post.routes.js
-//
-// Wires PostService's publish() and listPublished() to
-// the API contract's POST /api/posts and GET /api/posts (Lecture 4).
-// Same thin-route discipline as auth.routes.js: no business rules here.
 import { Router } from "express";
 import { PostService } from "../services/post.service.js";
-import { TokenService } from "../services/token.service.js";
-import { getTotalPostsPublished } from "../events/listeners/log-published-posts.listener.js";
+import { requireAuth } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-function requireAuth(req, res, next) {
-  const [scheme, token] = (req.headers.authorization ?? "").split(" ");
-  if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({
-      error: { code: "UNAUTHORIZED", message: "Missing or malformed Authorization header." },
-    });
-  }
-  try {
-    const payload = TokenService.verifyAccessToken(token);
-    req.user = { id: payload.sub, email: payload.email };
-    next();
-  } catch {
-    res.status(401).json({
-      error: { code: "INVALID_TOKEN", message: "Invalid or expired access token." },
-    });
-  }
+// Exercise 1 (Lecture 15): STRIDE Denial of Service mitigation for
+// GET /api/posts. Without an upper bound, a single request such as
+// ?pageSize=1000000 asks the database for the entire posts table in one
+// query. Oversized (or invalid) values are clamped to a safe range
+// instead of being passed through.
+export const DEFAULT_PAGE_SIZE = 10;
+export const MAX_PAGE_SIZE = 50;
+
+function clampPageSize(raw) {
+  const requested = Number.parseInt(raw, 10);
+  if (!Number.isFinite(requested) || requested < 1) return DEFAULT_PAGE_SIZE;
+  return Math.min(requested, MAX_PAGE_SIZE);
 }
 
-router.post("/posts", requireAuth, async (req, res) => {
+// server/src/routes/post.routes.js — AFTER (hardened)
+router.post("/posts", requireAuth, async (req, res, next) => {
   try {
-    const { title, body, tagNames } = req.body;
-    const post = await PostService.publish({ authorId: req.user.id, title, body, tagNames });
-    res.status(201).json(post);
-  } catch (err) {
-    res.status(400).json({
-      error: { code: err.code || "VALIDATION_ERROR", message: err.message },
+    // Never trust client-supplied identity fields — derive
+    // authorId from the authenticated request, not the request body.
+    const post = await PostService.publish({
+      ...req.body,
+      authorId: req.user.id, // set by requireAuth middleware from the verified JWT
     });
-  }
-});
-
-router.get("/posts", async (req, res, next) => {
-  try {
-    const { search } = req.query;
-    const page = Number(req.query.page) || 1;
-    const result = search
-      ? await PostService.search({ query: search, page })
-      : await PostService.listPublished({ page });
-    res.status(200).json(result);
+    res.status(201).json(post);
   } catch (err) {
     next(err);
   }
 });
 
-router.get("/stats", (req, res) => {
-  res.status(200).json({ totalPostsPublished: getTotalPostsPublished() });
+router.get("/posts", async (req, res, next) => {
+  try {
+    const { page = 1, search } = req.query;
+    const pageSize = clampPageSize(req.query.pageSize);
+    const result = search
+      ? await PostService.search({ query: search, page: Number(page), pageSize })
+      : await PostService.listPublished({ page: Number(page), pageSize });
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
